@@ -7,6 +7,10 @@ export interface User {
   email: string;
   role: UserRole;
   avatar?: string;
+  collegeId?: string;
+  verified: boolean;
+  rating?: number; // Average rating (1-5)
+  totalRatings?: number; // Number of ratings received
 }
 
 export interface Subject {
@@ -28,7 +32,19 @@ export interface Material {
   fileUrl: string;
   thumbnailUrl?: string;
   uploadedBy: string;
+  uploadedByUser?: User;
   uploadedAt: string;
   downloads: number;
   size: number;
+  rating?: number; // Average rating (1-5)
+  totalRatings?: number; // Number of ratings received
+  userRating?: number; // Current user's rating
+}
+
+export interface Rating {
+  id: string;
+  materialId: string; 
+  userId: string;
+  value: 1 | 2 | 3 | 4 | 5;
+  createdAt: string;
 }

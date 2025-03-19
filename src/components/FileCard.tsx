@@ -3,10 +3,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { 
   Download, File, FileText, BookOpen, 
-  FileQuestion, FileClock, Clock 
+  FileQuestion, FileClock, Clock, User 
 } from "lucide-react";
 import type { Material } from "@/types";
 import { formatDistanceToNow } from "date-fns";
+import RatingStars from "./RatingStars";
+import { Link } from "react-router-dom";
 
 interface FileCardProps {
   material: Material;
@@ -15,6 +17,7 @@ interface FileCardProps {
 
 const FileCard = ({ material, onDownload }: FileCardProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [currentRating, setCurrentRating] = useState<number | undefined>(material.userRating);
 
   const getIcon = () => {
     switch (material.type) {
@@ -46,6 +49,11 @@ const FileCard = ({ material, onDownload }: FileCardProps) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleRatingChange = (newRating: number) => {
+    setCurrentRating(newRating);
+    // In a real app, this would save the rating to an API
   };
 
   return (
@@ -86,6 +94,35 @@ const FileCard = ({ material, onDownload }: FileCardProps) => {
           {material.description}
         </p>
         
+        {material.uploadedByUser && (
+          <div className="flex items-center pt-1">
+            <div className="w-6 h-6 rounded-full bg-secondary overflow-hidden mr-2 flex-shrink-0">
+              {material.uploadedByUser.avatar ? (
+                <img 
+                  src={material.uploadedByUser.avatar} 
+                  alt={material.uploadedByUser.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="w-4 h-4 m-1" />
+              )}
+            </div>
+            <Link to={`/profile/${material.uploadedBy}`} className="text-xs text-primary hover:underline">
+              {material.uploadedByUser.name}
+            </Link>
+            <div className="ml-auto flex items-center">
+              <RatingStars 
+                initialRating={material.rating} 
+                readOnly={true} 
+                size="sm" 
+              />
+              <span className="text-xs text-muted-foreground ml-1">
+                ({material.totalRatings || 0})
+              </span>
+            </div>
+          </div>
+        )}
+        
         <div className="flex items-center justify-between pt-2 text-xs text-muted-foreground">
           <div className="flex items-center space-x-1">
             <Clock className="h-3.5 w-3.5" />
@@ -108,6 +145,18 @@ const FileCard = ({ material, onDownload }: FileCardProps) => {
             </>
           )}
         </Button>
+        
+        {/* Rating section that appears after download */}
+        {currentRating !== undefined && (
+          <div className="pt-3 border-t mt-4">
+            <div className="text-xs text-muted-foreground mb-2">Rate this material:</div>
+            <RatingStars
+              initialRating={currentRating}
+              onChange={handleRatingChange}
+              materialId={material.id}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

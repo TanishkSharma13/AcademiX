@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { toast } from "@/components/ui/toast";
+import { toast } from "@/hooks/use-toast";
 import { BookOpen, ArrowLeft } from "lucide-react";
 import { UserRole } from "@/types";
+import CollegeIdVerification from "@/components/CollegeIdVerification";
 
 const Login = () => {
   const location = useLocation();
@@ -22,10 +23,13 @@ const Login = () => {
   const [name, setName] = useState("");
   const [role, setRole] = useState<UserRole>(defaultRole || "junior");
   const [isLoading, setIsLoading] = useState(false);
+  const [showVerification, setShowVerification] = useState(false);
+  const [collegeId, setCollegeId] = useState("");
+  const [isVerified, setIsVerified] = useState(false);
 
   useEffect(() => {
     // Set title
-    document.title = isLogin ? "Log In - StudySwap" : "Sign Up - StudySwap";
+    document.title = isLogin ? "Log In - AcademiX" : "Sign Up - AcademiX";
   }, [isLogin]);
 
   useEffect(() => {
@@ -43,14 +47,26 @@ const Login = () => {
     setEmail("");
     setPassword("");
     setName("");
+    setShowVerification(false);
     
     // Update URL without reloading
     const newSearch = isLogin ? "?signup=true" : "";
     navigate({ pathname: location.pathname, search: newSearch }, { replace: true });
   };
 
+  const handleVerified = (verifiedCollegeId: string, detectedRole: UserRole) => {
+    setCollegeId(verifiedCollegeId);
+    setRole(detectedRole);
+    setIsVerified(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isLogin && !isVerified) {
+      setShowVerification(true);
+      return;
+    }
     
     // Basic validation
     if (!email || !password || (!isLogin && !name)) {
@@ -72,12 +88,12 @@ const Login = () => {
       toast({
         title: isLogin ? "Login Successful" : "Account Created",
         description: isLogin 
-          ? "Welcome back to StudySwap!" 
+          ? "Welcome back to AcademiX!" 
           : `Your account has been created as a ${role} student.`,
       });
       
       // Redirect after successful authentication
-      navigate(role === "junior" ? "/browse" : "/upload");
+      navigate(role === "junior" ? "/browse" : "/dashboard");
       
     } catch (error) {
       toast({
@@ -98,7 +114,7 @@ const Login = () => {
           <div className="relative z-10 text-white max-w-md mx-auto">
             <Link to="/" className="inline-flex items-center space-x-2 group mb-12">
               <BookOpen className="h-8 w-8 text-white group-hover:scale-110 transition-transform duration-200" />
-              <span className="font-bold text-2xl">StudySwap</span>
+              <span className="font-bold text-2xl">AcademiX</span>
             </Link>
             <h1 className="text-3xl md:text-4xl font-bold mb-6">
               {isLogin ? "Welcome Back!" : "Join Our Community"}
@@ -108,6 +124,7 @@ const Login = () => {
                 ? "Log in to access study materials shared by seniors or to upload your own resources."
                 : "Create an account to access a wealth of study materials or share your own with juniors."}
             </p>
+            <p className="text-xl font-semibold mb-4">A mix of academics and rewards</p>
             <div className="space-y-6">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
@@ -163,74 +180,66 @@ const Login = () => {
               {isLogin ? "Log in to your account" : "Create a new account"}
             </h2>
             
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {!isLogin && (
+            {!isLogin && showVerification ? (
+              <CollegeIdVerification onVerified={handleVerified} />
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {!isLogin && (
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input
+                      id="name"
+                      placeholder="Enter your full name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required={!isLogin}
+                    />
+                  </div>
+                )}
+                
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
+                  <Label htmlFor="email">Email</Label>
                   <Input
-                    id="name"
-                    placeholder="Enter your full name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required={!isLogin}
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
                   />
                 </div>
-              )}
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder={isLogin ? "Enter your password" : "Create a password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              
-              {!isLogin && (
-                <div className="space-y-3 pt-2">
-                  <Label>I am a:</Label>
-                  <RadioGroup value={role} onValueChange={(value) => setRole(value as UserRole)}>
-                    <div className="flex space-x-4">
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="junior" id="junior" />
-                        <Label htmlFor="junior" className="cursor-pointer">Junior Student</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="senior" id="senior" />
-                        <Label htmlFor="senior" className="cursor-pointer">Senior Student</Label>
-                      </div>
-                    </div>
-                  </RadioGroup>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder={isLogin ? "Enter your password" : "Create a password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
                 </div>
-              )}
-              
-              <Button 
-                type="submit" 
-                className="w-full mt-6 btn-hover"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  isLogin ? "Logging in..." : "Creating account..."
-                ) : (
-                  isLogin ? "Log In" : "Sign Up"
+                
+                {!isLogin && isVerified && (
+                  <div className="p-3 border rounded-md bg-green-50 text-green-800 text-sm">
+                    <span className="font-medium">Verified:</span> Your college ID ({collegeId}) confirms you as a {role} student.
+                  </div>
                 )}
-              </Button>
-            </form>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full mt-6 btn-hover"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    isLogin ? "Logging in..." : "Creating account..."
+                  ) : (
+                    isLogin ? "Log In" : (!isVerified ? "Verify College ID" : "Sign Up")
+                  )}
+                </Button>
+              </form>
+            )}
             
             <div className="mt-6 text-center">
               <p className="text-muted-foreground">
