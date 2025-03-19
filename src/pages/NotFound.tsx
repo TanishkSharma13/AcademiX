@@ -10,7 +10,7 @@ const NotFound = () => {
 
   useEffect(() => {
     // Set title
-    document.title = "Page Not Found - StudySwap";
+    document.title = "Page Not Found - AcademiX";
     
     console.error(
       "404 Error: User attempted to access non-existent route:",
@@ -22,7 +22,7 @@ const NotFound = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-secondary/30 px-6 py-24">
       <Link to="/" className="flex items-center space-x-2 group mb-12">
         <BookOpen className="h-8 w-8 text-primary group-hover:scale-110 transition-transform duration-200" />
-        <span className="font-bold text-2xl">StudySwap</span>
+        <span className="font-bold text-2xl">AcademiX</span>
       </Link>
       
       <div className="w-full max-w-md text-center space-y-6">

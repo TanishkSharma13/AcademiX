@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
@@ -12,7 +11,7 @@ import { Link } from "react-router-dom";
 const Index = () => {
   useEffect(() => {
     // Set title
-    document.title = "StudySwap - Exchange Study Materials";
+    document.title = "AcademiX - A mix of academics and rewards";
   }, []);
 
   return (
@@ -25,7 +24,7 @@ const Index = () => {
         <section className="py-20 px-6 bg-secondary/50">
           <div className="max-w-7xl mx-auto">
             <div className="text-center max-w-3xl mx-auto mb-16">
-              <h2 className="text-3xl font-bold tracking-tight mb-4">How StudySwap Works</h2>
+              <h2 className="text-3xl font-bold tracking-tight mb-4">How AcademiX Works</h2>
               <p className="text-lg text-muted-foreground">
                 A simple platform built by students, for students, enabling the free exchange of study materials.
               </p>
@@ -235,7 +234,7 @@ const Index = () => {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-2 mb-6 md:mb-0">
               <BookOpen className="h-5 w-5 text-primary" />
-              <span className="font-bold text-lg">StudySwap</span>
+              <span className="font-bold text-lg">AcademiX</span>
             </div>
             <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
               <Link to="/browse" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -250,7 +249,7 @@ const Index = () => {
             </div>
           </div>
           <div className="mt-8 pt-8 border-t text-center text-sm text-muted-foreground">
-            <p>© {new Date().getFullYear()} StudySwap. Created for B.Tech Computer Science students.</p>
+            <p>© {new Date().getFullYear()} AcademiX. A mix of academics and rewards.</p>
           </div>
         </div>
       </footer>

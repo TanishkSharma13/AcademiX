@@ -39,7 +39,7 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <Link to="/" className="flex items-center space-x-2 group">
           <BookOpen className="h-6 w-6 text-primary group-hover:scale-110 transition-transform duration-200" />
-          <span className="font-bold text-xl">StudySwap</span>
+          <span className="font-bold text-xl">AcademiX</span>
         </Link>
 
         {/* Desktop navigation */}
