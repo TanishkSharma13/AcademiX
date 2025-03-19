@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import { toast } from "@/hooks/use-toast";
@@ -17,6 +16,8 @@ import {
 import { Progress } from "@/components/ui/progress";
 import UserStatsCard from "@/components/UserStatsCard";
 import MaterialsList from "@/components/MaterialsList";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 // Mock senior user data
 const mockUser: User = {
