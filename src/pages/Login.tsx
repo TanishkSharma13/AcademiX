@@ -1,15 +1,13 @@
 
-import { useState, useEffect } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { toast } from "@/hooks/use-toast";
-import { BookOpen, ArrowLeft, Eye, EyeOff, Check, X, AlertTriangle } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { UserRole } from "@/types";
 import CollegeIdVerification from "@/components/CollegeIdVerification";
-import { supabase } from "@/integrations/supabase/client";
+import LoginForm from "@/components/auth/LoginForm";
+import SignupForm from "@/components/auth/SignupForm";
+import LeftSidebar from "@/components/auth/LeftSidebar";
+import { useAuth } from "@/hooks/useAuth";
 
 const Login = () => {
   const location = useLocation();
@@ -18,236 +16,31 @@ const Login = () => {
   const isSignUp = queryParams.get("signup") === "true";
   const defaultRole = queryParams.get("role") as UserRole | null;
   
-  const [isLogin, setIsLogin] = useState(!isSignUp);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [role, setRole] = useState<UserRole>(defaultRole || "junior");
-  const [isLoading, setIsLoading] = useState(false);
-  const [showVerification, setShowVerification] = useState(false);
-  const [collegeId, setCollegeId] = useState("");
-  const [isVerified, setIsVerified] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [checkingUser, setCheckingUser] = useState(false);
-  const [passwordErrors, setPasswordErrors] = useState<{
-    length: boolean;
-    specialAndNumber: boolean;
-    cases: boolean;
-  }>({
-    length: false,
-    specialAndNumber: false,
-    cases: false
-  });
-
-  useEffect(() => {
-    // Set title
-    document.title = isLogin ? "Log In - AcademiX" : "Sign Up - AcademiX";
-  }, [isLogin]);
-
-  useEffect(() => {
-    setIsLogin(!isSignUp);
-  }, [isSignUp]);
-
-  useEffect(() => {
-    if (defaultRole) {
-      setRole(defaultRole);
-    }
-  }, [defaultRole]);
-
-  // Password validation
-  useEffect(() => {
-    if (!isLogin && password) {
-      const hasMinLength = password.length >= 8;
-      const hasSpecialChar = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]+/.test(password);
-      const hasNumber = /\d/.test(password);
-      const hasUppercase = /[A-Z]/.test(password);
-      const hasLowercase = /[a-z]/.test(password);
-      
-      setPasswordErrors({
-        length: hasMinLength,
-        specialAndNumber: hasSpecialChar && hasNumber,
-        cases: hasUppercase && hasLowercase
-      });
-    }
-  }, [password, isLogin]);
-
-  const handleToggleMode = () => {
-    setIsLogin(!isLogin);
-    setEmail("");
-    setPassword("");
-    setName("");
-    setShowVerification(false);
-    setPasswordErrors({
-      length: false,
-      specialAndNumber: false,
-      cases: false
-    });
-    
-    // Update URL without reloading
-    const newSearch = isLogin ? "?signup=true" : "";
-    navigate({ pathname: location.pathname, search: newSearch }, { replace: true });
-  };
-
-  const handleVerified = (verifiedCollegeId: string, detectedRole: UserRole) => {
-    setCollegeId(verifiedCollegeId);
-    setRole(detectedRole);
-    setIsVerified(true);
-  };
-
-  const validatePassword = () => {
-    if (isLogin) return true;
-    
-    return passwordErrors.length && passwordErrors.specialAndNumber && passwordErrors.cases;
-  };
-
-  // Check if user exists in database
-  const checkUserExists = async (email: string): Promise<boolean> => {
-    try {
-      setCheckingUser(true);
-      const { data, error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: false
-        }
-      });
-
-      // If there's no error or the error is not "User not found", the user exists
-      return !error || error.message !== "User not found";
-    } catch (error) {
-      console.error("Error checking if user exists:", error);
-      return false;
-    } finally {
-      setCheckingUser(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Basic validation
-    if (!email || !password || (!isLogin && !name)) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Password validation for signup
-    if (!isLogin && !validatePassword()) {
-      toast({
-        title: "Password Requirements",
-        description: "Your password does not meet all the requirements.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // For signup, check if user already exists before proceeding to verification
-    if (!isLogin && !isVerified) {
-      setIsLoading(true);
-      const userExists = await checkUserExists(email);
-      setIsLoading(false);
-      
-      if (userExists) {
-        toast({
-          title: "Account Already Exists",
-          description: "An account with this email already exists. Please log in instead.",
-          variant: "destructive",
-        });
-        
-        // Switch to login mode
-        setIsLogin(true);
-        navigate({ pathname: location.pathname, search: "" }, { replace: true });
-        return;
-      }
-      
-      // If user doesn't exist, proceed to verification
-      setShowVerification(true);
-      return;
-    }
-    
-    setIsLoading(true);
-    
-    try {
-      // TODO: Replace with Supabase authentication
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast({
-        title: isLogin ? "Login Successful" : "Account Created",
-        description: isLogin 
-          ? "Welcome back to AcademiX!" 
-          : `Your account has been created as a ${role} student.`,
-      });
-      
-      // Redirect after successful authentication
-      navigate(role === "junior" ? "/browse" : "/dashboard");
-      
-    } catch (error) {
-      toast({
-        title: isLogin ? "Login Failed" : "Sign Up Failed",
-        description: "There was an error processing your request. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
+  const {
+    isLogin,
+    email,
+    setEmail,
+    password,
+    setPassword,
+    name,
+    setName,
+    role,
+    isLoading,
+    showVerification,
+    collegeId,
+    isVerified,
+    checkingUser,
+    passwordErrors,
+    handleToggleMode,
+    handleVerified,
+    validatePassword,
+    handleSubmit
+  } = useAuth(isSignUp, defaultRole);
 
   return (
     <div className="min-h-screen flex flex-col bg-secondary/30">
       <div className="flex-1 flex flex-col md:flex-row">
-        <div className="md:w-1/2 bg-primary p-8 md:p-12 flex items-center justify-center relative overflow-hidden">
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1462536943532-57a629f6cc60?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1473&q=80')] bg-cover bg-center opacity-20"></div>
-          <div className="relative z-10 text-white max-w-md mx-auto">
-            <Link to="/" className="inline-flex items-center space-x-2 group mb-12">
-              <BookOpen className="h-8 w-8 text-white group-hover:scale-110 transition-transform duration-200" />
-              <span className="font-bold text-2xl">AcademiX</span>
-            </Link>
-            <h1 className="text-3xl md:text-4xl font-bold mb-6">
-              {isLogin ? "Welcome Back!" : "Join Our Community"}
-            </h1>
-            <p className="text-lg opacity-90 mb-8">
-              {isLogin 
-                ? "Log in to access study materials shared by seniors or to upload your own resources."
-                : "Create an account to access a wealth of study materials or share your own with juniors."}
-            </p>
-            <p className="text-xl font-semibold mb-4">A mix of academics and rewards</p>
-            <div className="space-y-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                  <BookOpen className="h-5 w-5" />
-                </div>
-                <p className="opacity-90">Access notes and papers for B.Tech CS</p>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    className="h-5 w-5"
-                  >
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9" cy="7" r="4"></circle>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                  </svg>
-                </div>
-                <p className="opacity-90">Connect with seniors and juniors</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <LeftSidebar />
         
         <div className="md:w-1/2 p-8 md:p-12 flex items-center justify-center">
           <div className="w-full max-w-md">
@@ -275,134 +68,36 @@ const Login = () => {
             
             {!isLogin && showVerification ? (
               <CollegeIdVerification onVerified={handleVerified} />
+            ) : isLogin ? (
+              <LoginForm 
+                email={email}
+                password={password}
+                isLoading={isLoading}
+                onEmailChange={(e) => setEmail(e.target.value)}
+                onPasswordChange={(e) => setPassword(e.target.value)}
+                onSubmit={handleSubmit}
+                onToggleMode={handleToggleMode}
+              />
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-5">
-                {!isLogin && (
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input
-                      id="name"
-                      placeholder="Enter your full name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required={!isLogin}
-                    />
-                  </div>
-                )}
-                
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder={isLogin ? "Enter your password" : "Create a password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="pr-10"
-                    />
-                    <button 
-                      type="button" 
-                      className="absolute right-2 top-2 text-gray-400 hover:text-gray-600"
-                      onClick={togglePasswordVisibility}
-                    >
-                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
-                  </div>
-                  
-                  {/* Password Requirements */}
-                  {!isLogin && (
-                    <div className="mt-2 space-y-2 text-sm">
-                      <p className="font-medium text-gray-700">Password requirements:</p>
-                      <div className="flex items-center gap-2">
-                        {passwordErrors.length ? (
-                          <Check className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <X className="h-4 w-4 text-red-500" />
-                        )}
-                        <span className={passwordErrors.length ? "text-green-700" : "text-gray-600"}>
-                          At least 8 characters
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        {passwordErrors.specialAndNumber ? (
-                          <Check className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <X className="h-4 w-4 text-red-500" />
-                        )}
-                        <span className={passwordErrors.specialAndNumber ? "text-green-700" : "text-gray-600"}>
-                          Include special characters and numbers
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        {passwordErrors.cases ? (
-                          <Check className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <X className="h-4 w-4 text-red-500" />
-                        )}
-                        <span className={passwordErrors.cases ? "text-green-700" : "text-gray-600"}>
-                          Uppercase and lowercase letters
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                {!isLogin && isVerified && (
-                  <div className="p-3 border rounded-md bg-green-50 text-green-800 text-sm">
-                    <span className="font-medium">Verified:</span> Your college ID ({collegeId}) confirms you as a {role} student.
-                  </div>
-                )}
-                
-                <Button 
-                  type="submit" 
-                  className="w-full mt-6 btn-hover"
-                  disabled={isLoading || checkingUser || (!isLogin && !validatePassword() && !isVerified)}
-                >
-                  {isLoading || checkingUser ? (
-                    checkingUser ? "Checking account..." : (isLogin ? "Logging in..." : "Creating account...")
-                  ) : (
-                    isLogin ? "Log In" : (!isVerified ? "Verify College ID" : "Sign Up")
-                  )}
-                </Button>
-                
-                {/* Error message when password requirements are not met */}
-                {!isLogin && !validatePassword() && (
-                  <div className="p-3 border border-red-200 rounded-md bg-red-50 text-red-800 text-sm flex items-start">
-                    <AlertTriangle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
-                    <span>Please meet all password requirements before proceeding.</span>
-                  </div>
-                )}
-              </form>
+              <SignupForm 
+                email={email}
+                password={password}
+                name={name}
+                role={role}
+                isLoading={isLoading}
+                checkingUser={checkingUser}
+                isVerified={isVerified}
+                collegeId={collegeId}
+                passwordErrors={passwordErrors}
+                onEmailChange={(e) => setEmail(e.target.value)}
+                onPasswordChange={(e) => setPassword(e.target.value)}
+                onNameChange={(e) => setName(e.target.value)}
+                onRoleChange={(value) => setRole(value)}
+                onSubmit={handleSubmit}
+                onToggleMode={handleToggleMode}
+                validatePassword={validatePassword}
+              />
             )}
-            
-            <div className="mt-6 text-center">
-              <p className="text-muted-foreground">
-                {isLogin ? "Don't have an account?" : "Already have an account?"}
-                <button
-                  type="button"
-                  onClick={handleToggleMode}
-                  className="text-primary font-medium ml-2 hover:underline focus:outline-none"
-                >
-                  {isLogin ? "Sign up" : "Log in"}
-                </button>
-              </p>
-            </div>
           </div>
         </div>
       </div>
