@@ -28,6 +28,7 @@ const Login = () => {
   const [collegeId, setCollegeId] = useState("");
   const [isVerified, setIsVerified] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [checkingUser, setCheckingUser] = useState(false);
   const [passwordErrors, setPasswordErrors] = useState<{
     length: boolean;
     specialAndNumber: boolean;
@@ -99,6 +100,27 @@ const Login = () => {
     return passwordErrors.length && passwordErrors.specialAndNumber && passwordErrors.cases;
   };
 
+  // Check if user exists in database
+  const checkUserExists = async (email: string): Promise<boolean> => {
+    try {
+      setCheckingUser(true);
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false
+        }
+      });
+
+      // If there's no error or the error is not "User not found", the user exists
+      return !error || error.message !== "User not found";
+    } catch (error) {
+      console.error("Error checking if user exists:", error);
+      return false;
+    } finally {
+      setCheckingUser(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -122,8 +144,26 @@ const Login = () => {
       return;
     }
     
-    // If it's signup and password validation passes, proceed to verification
+    // For signup, check if user already exists before proceeding to verification
     if (!isLogin && !isVerified) {
+      setIsLoading(true);
+      const userExists = await checkUserExists(email);
+      setIsLoading(false);
+      
+      if (userExists) {
+        toast({
+          title: "Account Already Exists",
+          description: "An account with this email already exists. Please log in instead.",
+          variant: "destructive",
+        });
+        
+        // Switch to login mode
+        setIsLogin(true);
+        navigate({ pathname: location.pathname, search: "" }, { replace: true });
+        return;
+      }
+      
+      // If user doesn't exist, proceed to verification
       setShowVerification(true);
       return;
     }
@@ -332,10 +372,10 @@ const Login = () => {
                 <Button 
                   type="submit" 
                   className="w-full mt-6 btn-hover"
-                  disabled={isLoading || (!isLogin && !validatePassword() && !isVerified)}
+                  disabled={isLoading || checkingUser || (!isLogin && !validatePassword() && !isVerified)}
                 >
-                  {isLoading ? (
-                    isLogin ? "Logging in..." : "Creating account..."
+                  {isLoading || checkingUser ? (
+                    checkingUser ? "Checking account..." : (isLogin ? "Logging in..." : "Creating account...")
                   ) : (
                     isLogin ? "Log In" : (!isVerified ? "Verify College ID" : "Sign Up")
                   )}
