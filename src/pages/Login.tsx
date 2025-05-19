@@ -1,5 +1,6 @@
 
-import { useLocation, useNavigate, Link } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { UserRole } from "@/types";
@@ -11,7 +12,6 @@ import { useAuth } from "@/hooks/useAuth";
 
 const Login = () => {
   const location = useLocation();
-  const navigate = useNavigate();
   const queryParams = new URLSearchParams(location.search);
   const isSignUp = queryParams.get("signup") === "true";
   const defaultRole = queryParams.get("role") as UserRole | null;
@@ -25,6 +25,7 @@ const Login = () => {
     name,
     setName,
     role,
+    setRole,
     isLoading,
     showVerification,
     collegeId,
