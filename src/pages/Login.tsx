@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/hooks/use-toast";
-import { BookOpen, ArrowLeft } from "lucide-react";
+import { BookOpen, ArrowLeft, Eye, EyeOff, Check, X, AlertTriangle } from "lucide-react";
 import { UserRole } from "@/types";
 import CollegeIdVerification from "@/components/CollegeIdVerification";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const location = useLocation();
@@ -26,6 +27,16 @@ const Login = () => {
   const [showVerification, setShowVerification] = useState(false);
   const [collegeId, setCollegeId] = useState("");
   const [isVerified, setIsVerified] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordErrors, setPasswordErrors] = useState<{
+    length: boolean;
+    specialAndNumber: boolean;
+    cases: boolean;
+  }>({
+    length: false,
+    specialAndNumber: false,
+    cases: false
+  });
 
   useEffect(() => {
     // Set title
@@ -42,12 +53,34 @@ const Login = () => {
     }
   }, [defaultRole]);
 
+  // Password validation
+  useEffect(() => {
+    if (!isLogin && password) {
+      const hasMinLength = password.length >= 8;
+      const hasSpecialChar = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]+/.test(password);
+      const hasNumber = /\d/.test(password);
+      const hasUppercase = /[A-Z]/.test(password);
+      const hasLowercase = /[a-z]/.test(password);
+      
+      setPasswordErrors({
+        length: hasMinLength,
+        specialAndNumber: hasSpecialChar && hasNumber,
+        cases: hasUppercase && hasLowercase
+      });
+    }
+  }, [password, isLogin]);
+
   const handleToggleMode = () => {
     setIsLogin(!isLogin);
     setEmail("");
     setPassword("");
     setName("");
     setShowVerification(false);
+    setPasswordErrors({
+      length: false,
+      specialAndNumber: false,
+      cases: false
+    });
     
     // Update URL without reloading
     const newSearch = isLogin ? "?signup=true" : "";
@@ -58,6 +91,12 @@ const Login = () => {
     setCollegeId(verifiedCollegeId);
     setRole(detectedRole);
     setIsVerified(true);
+  };
+
+  const validatePassword = () => {
+    if (isLogin) return true;
+    
+    return passwordErrors.length && passwordErrors.specialAndNumber && passwordErrors.cases;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -77,14 +116,23 @@ const Login = () => {
       });
       return;
     }
+
+    // Password validation for signup
+    if (!isLogin && !validatePassword()) {
+      toast({
+        title: "Password Requirements",
+        description: "Your password does not meet all the requirements.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsLoading(true);
     
     try {
-      // Simulate API call
+      // TODO: Replace with Supabase authentication
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // In a real app, this would handle authentication with a backend
       toast({
         title: isLogin ? "Login Successful" : "Account Created",
         description: isLogin 
@@ -104,6 +152,10 @@ const Login = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
@@ -211,14 +263,63 @@ const Login = () => {
                 
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder={isLogin ? "Enter your password" : "Create a password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder={isLogin ? "Enter your password" : "Create a password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="pr-10"
+                    />
+                    <button 
+                      type="button" 
+                      className="absolute right-2 top-2 text-gray-400 hover:text-gray-600"
+                      onClick={togglePasswordVisibility}
+                    >
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                  
+                  {/* Password Requirements */}
+                  {!isLogin && (
+                    <div className="mt-2 space-y-2 text-sm">
+                      <p className="font-medium text-gray-700">Password requirements:</p>
+                      <div className="flex items-center gap-2">
+                        {passwordErrors.length ? (
+                          <Check className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <X className="h-4 w-4 text-red-500" />
+                        )}
+                        <span className={passwordErrors.length ? "text-green-700" : "text-gray-600"}>
+                          At least 8 characters
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        {passwordErrors.specialAndNumber ? (
+                          <Check className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <X className="h-4 w-4 text-red-500" />
+                        )}
+                        <span className={passwordErrors.specialAndNumber ? "text-green-700" : "text-gray-600"}>
+                          Include special characters and numbers
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        {passwordErrors.cases ? (
+                          <Check className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <X className="h-4 w-4 text-red-500" />
+                        )}
+                        <span className={passwordErrors.cases ? "text-green-700" : "text-gray-600"}>
+                          Uppercase and lowercase letters
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 {!isLogin && isVerified && (
