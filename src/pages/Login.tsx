@@ -102,11 +102,6 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!isLogin && !isVerified) {
-      setShowVerification(true);
-      return;
-    }
-    
     // Basic validation
     if (!email || !password || (!isLogin && !name)) {
       toast({
@@ -124,6 +119,12 @@ const Login = () => {
         description: "Your password does not meet all the requirements.",
         variant: "destructive",
       });
+      return;
+    }
+    
+    // If it's signup and password validation passes, proceed to verification
+    if (!isLogin && !isVerified) {
+      setShowVerification(true);
       return;
     }
     
@@ -331,7 +332,7 @@ const Login = () => {
                 <Button 
                   type="submit" 
                   className="w-full mt-6 btn-hover"
-                  disabled={isLoading}
+                  disabled={isLoading || (!isLogin && !validatePassword() && !isVerified)}
                 >
                   {isLoading ? (
                     isLogin ? "Logging in..." : "Creating account..."
@@ -339,6 +340,14 @@ const Login = () => {
                     isLogin ? "Log In" : (!isVerified ? "Verify College ID" : "Sign Up")
                   )}
                 </Button>
+                
+                {/* Error message when password requirements are not met */}
+                {!isLogin && !validatePassword() && (
+                  <div className="p-3 border border-red-200 rounded-md bg-red-50 text-red-800 text-sm flex items-start">
+                    <AlertTriangle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+                    <span>Please meet all password requirements before proceeding.</span>
+                  </div>
+                )}
               </form>
             )}
             
